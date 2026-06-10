@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Sudoku Solver IA
 
 Projeto da disciplina - Introdução à Inteligência Artificial

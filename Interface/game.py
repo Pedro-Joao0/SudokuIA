@@ -1,10 +1,10 @@
 import pygame
-from metricas.metrics import Metrics
-from agente.dfs import DFSAgent
-from agente.astar import AStarAgent
-from agente.hill_climbing import HillClimbingAgent
+from Metricas.metrics import Metrics
+from Agente.dfs import DFSAgent
+from Agente.astar import AStarAgent
+from Agente.hill_climbing import HillClimbingAgent
 
-from metricas.search_tree import SearchTree, SearchNode
+from Metricas.search_tree import SearchTree, SearchNode
 
 # ── layout ────────────────────────────────────────────────────────────────
 BOARD_W  = 540

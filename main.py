@@ -1,5 +1,5 @@
-from Ambiente.sudoku import Sudoku
-from Interface.game import SudokuGUI
+from ambiente.sudoku import Sudoku
+from interface.game import SudokuGUI
 
 sudoku = Sudoku()
 

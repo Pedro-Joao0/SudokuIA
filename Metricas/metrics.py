@@ -5,9 +5,10 @@ class Metrics:
 
     def __init__(self):
 
-        self.execution_time = 0
+        self.execution_time  = 0
         self.states_explored = 0
-        self.success_rate = 0
+        self.success_rate    = 0
+        self.score_history   = []
 
         self.start_time = None
 
@@ -30,6 +31,7 @@ class Metrics:
         self.execution_time  = 0
         self.states_explored = 0
         self.success_rate    = 0
+        self.score_history   = []
         self.start_time      = None
 
     def to_dict(self):

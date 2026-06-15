@@ -233,6 +233,103 @@ class ScorePanel:
 
 
 # ---------------------------------------------------------------------
+class CostPanel:
+    """Line chart of A* f/g/h cost values over expanded nodes."""
+
+    TITLE_H = 28
+    PAD     = 44
+    COLOR_F = (0,   0,   0)
+    COLOR_G = (60,  120, 200)
+    COLOR_H = (200, 60,  60)
+
+    def __init__(self, rect, font, lbl_font):
+        self.rect      = rect
+        self.font      = font
+        self.lbl_font  = lbl_font
+        self.f_history = []
+        self.g_history = []
+        self.h_history = []
+
+    def set_history(self, f_hist, g_hist, h_hist):
+        self.f_history = f_hist
+        self.g_history = g_hist
+        self.h_history = h_hist
+
+    def draw(self, surf):
+        pygame.draw.rect(surf, WHITE, self.rect)
+        pygame.draw.rect(surf, BLACK, self.rect, 1)
+
+        title_bar = pygame.Rect(self.rect.x, self.rect.y, self.rect.w, self.TITLE_H)
+        pygame.draw.rect(surf, LGRAY, title_bar)
+        pygame.draw.line(surf, BLACK,
+                         (self.rect.x, self.rect.y + self.TITLE_H),
+                         (self.rect.right, self.rect.y + self.TITLE_H), 1)
+        surf.blit(self.font.render("Gráfico A*", True, BLACK),
+                  (self.rect.x + 8, self.rect.y + 6))
+
+        cx = self.rect.x + self.PAD
+        cy = self.rect.y + self.TITLE_H + self.PAD
+        cw = self.rect.w - self.PAD * 2
+        ch = self.rect.h - self.TITLE_H - self.PAD * 2 - 30
+
+        if cw <= 0 or ch <= 0:
+            return
+
+        origin = (cx, cy + ch)
+        pygame.draw.line(surf, BLACK, origin, (cx + cw, cy + ch), 2)
+        pygame.draw.line(surf, BLACK, origin, (cx, cy), 2)
+
+        surf.blit(self.lbl_font.render("Nós", True, BLACK),
+                  (cx + cw // 2 - 10, cy + ch + 18))
+        lbl_v = pygame.transform.rotate(self.lbl_font.render("Custo", True, BLACK), 90)
+        surf.blit(lbl_v, (cx - self.PAD + 4, cy + ch // 2 - lbl_v.get_height() // 2))
+
+        if not self.f_history:
+            return
+
+        n = len(self.f_history)
+        step = max(1, n // 500)
+        f_d = self.f_history[::step]
+        g_d = self.g_history[::step]
+        h_d = self.h_history[::step]
+        nd  = len(f_d)
+
+        all_vals = f_d + g_d + h_d
+        max_val  = max(all_vals) if max(all_vals) > 0 else 1
+
+        for i_step in range(0, max_val + 1, max(1, max_val // 5)):
+            gy  = cy + ch - int(i_step / max_val * ch)
+            pygame.draw.line(surf, LGRAY, (cx, gy), (cx + cw, gy), 1)
+            lbl = self.lbl_font.render(str(i_step), True, MGRAY)
+            surf.blit(lbl, (cx - lbl.get_width() - 4, gy - lbl.get_height() // 2))
+
+        def pt(i, v):
+            return (cx + int(i / max(nd - 1, 1) * cw),
+                    cy + ch - int(v / max_val * ch))
+
+        for hist, color in [(f_d, self.COLOR_F), (g_d, self.COLOR_G), (h_d, self.COLOR_H)]:
+            points = [pt(i, v) for i, v in enumerate(hist)]
+            if len(points) >= 2:
+                pygame.draw.lines(surf, color, False, points, 2)
+
+        tick_n = min(10, nd)
+        for k in range(tick_n + 1):
+            i  = int(k / tick_n * (nd - 1)) if tick_n > 0 else 0
+            tx = cx + int(i / max(nd - 1, 1) * cw)
+            real_i = i * step
+            pygame.draw.line(surf, BLACK, (tx, cy + ch), (tx, cy + ch + 4), 1)
+            lbl = self.lbl_font.render(str(real_i), True, MGRAY)
+            surf.blit(lbl, (tx - lbl.get_width() // 2, cy + ch + 6))
+
+        legend_y = cy + ch + 30
+        lx = cx
+        for label, color in [("f=g+h", self.COLOR_F), ("g", self.COLOR_G), ("h", self.COLOR_H)]:
+            pygame.draw.line(surf, color, (lx, legend_y), (lx + 16, legend_y), 2)
+            surf.blit(self.lbl_font.render(label, True, color), (lx + 20, legend_y - 6))
+            lx += 70
+
+
+# ---------------------------------------------------------------------
 class SudokuGUI:
 
     def __init__(self, sudoku):
@@ -281,6 +378,7 @@ class SudokuGUI:
         panel_rect = pygame.Rect(BOARD_W + GAP, 0, PANEL_W, WIN_H)
         self.tree_panel  = TreePanel(panel_rect, self.ui_font)
         self.score_panel = ScorePanel(panel_rect, self.ui_font, self.lbl_font)
+        self.cost_panel  = CostPanel(panel_rect, self.ui_font, self.lbl_font)
 
         self.depth_input = DepthInput(
             pygame.Rect(108, BOARD_H + 52, 52, 22),
@@ -422,6 +520,11 @@ class SudokuGUI:
         self.tree_panel.set_tree(tree)
         tree.root.collapsed = False
         self.score_panel.set_history(getattr(self.metrics, 'score_history', []))
+        self.cost_panel.set_history(
+            getattr(self.metrics, 'f_history', []),
+            getattr(self.metrics, 'g_history', []),
+            getattr(self.metrics, 'h_history', []),
+        )
 
         if result is not None:
             self.result_board = result
@@ -485,6 +588,13 @@ class SudokuGUI:
             if self.current_algo == "HC":
                 self.score_panel.set_history(
                     self.metrics.score_history[:self._step_index + 1])
+            elif self.current_algo == "A*":
+                idx = self._step_index + 1
+                self.cost_panel.set_history(
+                    self.metrics.f_history[:idx],
+                    self.metrics.g_history[:idx],
+                    self.metrics.h_history[:idx],
+                )
             return
         if self._step_gen is None:
             self._step_done = True
@@ -502,6 +612,12 @@ class SudokuGUI:
             self.result_board = types.SimpleNamespace(board=board)
             if self.current_algo == "HC":
                 self.score_panel.set_history(self.metrics.score_history)
+            elif self.current_algo == "A*":
+                self.cost_panel.set_history(
+                    self.metrics.f_history,
+                    self.metrics.g_history,
+                    self.metrics.h_history,
+                )
             t = self.tree_panel.tree
             if t is not None:
                 for node in t._stack:
@@ -520,6 +636,13 @@ class SudokuGUI:
         if self.current_algo == "HC":
             self.score_panel.set_history(
                 self.metrics.score_history[:self._step_index + 1])
+        elif self.current_algo == "A*":
+            idx = self._step_index + 1
+            self.cost_panel.set_history(
+                self.metrics.f_history[:idx],
+                self.metrics.g_history[:idx],
+                self.metrics.h_history[:idx],
+            )
 
     def _generate_new(self):
         import random
@@ -569,6 +692,8 @@ class SudokuGUI:
             self._draw_controls()
             if self.current_algo == "HC":
                 self.score_panel.draw(self.screen)
+            elif self.current_algo == "A*":
+                self.cost_panel.draw(self.screen)
             else:
                 self.tree_panel.draw(self.screen, self.depth_input.value)
             pygame.display.update()

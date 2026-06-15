@@ -9,6 +9,9 @@ class Metrics:
         self.states_explored = 0
         self.success_rate    = 0
         self.score_history   = []
+        self.f_history       = []
+        self.g_history       = []
+        self.h_history       = []
 
         self.start_time = None
 
@@ -32,6 +35,9 @@ class Metrics:
         self.states_explored = 0
         self.success_rate    = 0
         self.score_history   = []
+        self.f_history       = []
+        self.g_history       = []
+        self.h_history       = []
         self.start_time      = None
 
     def to_dict(self):

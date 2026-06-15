@@ -65,6 +65,9 @@ class AStarAgent:
 
             if metrics:
                 metrics.increment_states()
+                metrics.f_history.append(f)
+                metrics.g_history.append(g)
+                metrics.h_history.append(f - g)
 
             nodes += 1
 
@@ -149,6 +152,9 @@ class AStarAgent:
 
             if metrics:
                 metrics.increment_states()
+                metrics.f_history.append(f)
+                metrics.g_history.append(g)
+                metrics.h_history.append(f - g)
 
             nodes += 1
 

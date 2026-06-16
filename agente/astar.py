@@ -35,14 +35,23 @@ class AStarAgent:
                         return False
             return True
 
+        # def heuristic_old(b):
+        #     empties = 0
+        #     for r in range(9):
+        #         for c in range(9):
+        #             if b[r][c] == 0:
+        #                 empties += 1
+        #     return empties
+        
         def heuristic(b):
-            # simple heuristic: number of empty cells
-            empties = 0
+            total = 0
             for r in range(9):
                 for c in range(9):
                     if b[r][c] == 0:
-                        empties += 1
-            return empties
+                        for num in range(1, 10):
+                            if is_valid(num, r, c, b):
+                                total += 1
+            return total
 
         start_key = board_key(board)
         visited = set()
@@ -126,12 +135,14 @@ class AStarAgent:
             return True
 
         def heuristic(b):
-            empties = 0
+            total = 0
             for r in range(9):
                 for c in range(9):
                     if b[r][c] == 0:
-                        empties += 1
-            return empties
+                        for num in range(1, 10):
+                            if is_valid(num, r, c, b):
+                                total += 1
+            return total
 
         visited = set()
         heap = []
